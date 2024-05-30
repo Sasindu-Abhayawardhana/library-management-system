@@ -6,6 +6,9 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
+        <module name="client-user" />
+        <module name="shared-app" />
+        <module name="client-admin" />
         <module name="server-app" />
       </profile>
     </annotationProcessing>

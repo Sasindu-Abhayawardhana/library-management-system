@@ -1,1 +1,3 @@
+module-info.class
 com/myproject/lms/shared/to/Book.class
+com/myproject/lms/shared/to/DbOperations.class

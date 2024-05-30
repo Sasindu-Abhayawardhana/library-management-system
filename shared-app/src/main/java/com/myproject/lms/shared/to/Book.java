@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class Book {
 
+    DbOperations dbOperations;
     int bookId;
     String isbn;
     String title;
@@ -20,3 +21,4 @@ public class Book {
     double price;
 
 }
+
