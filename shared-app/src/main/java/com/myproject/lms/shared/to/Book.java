@@ -16,8 +16,6 @@ public class Book {
     String author;
     String publisher;
     String category;
-    String editor;
-    int quantity;
     double price;
 
 }
