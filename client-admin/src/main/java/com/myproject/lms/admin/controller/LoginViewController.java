@@ -51,7 +51,7 @@ public class LoginViewController {
 //            userNameStatus = ois.readBoolean();
             userNameStatus = ((LoginRequest)ois.readObject()).getIsUserExit();
             System.out.println("userNameStatus: " + userNameStatus);
-//            remoteSocket.setSoTimeout(TIMEOUT_MILLISECONDS);
+            remoteSocket.setSoTimeout(TIMEOUT_MILLISECONDS);
 
             if(userNameStatus){
                 loginRequest.setIsUserExit(true);
