@@ -23,7 +23,7 @@ public class SingletonConnection {
             String username = properties.getProperty("app.username");
             String password = properties.getProperty("app.password");
 
-            DriverManager.getConnection(url,username,password);
+            connection = DriverManager.getConnection(url, username, password);
 
         } catch (IOException | SQLException e) {
             e.printStackTrace();

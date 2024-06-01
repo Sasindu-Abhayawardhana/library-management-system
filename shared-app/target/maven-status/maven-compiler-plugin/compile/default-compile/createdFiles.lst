@@ -1,3 +1,6 @@
-module-info.class
 com/myproject/lms/shared/to/Book.class
+com/myproject/lms/shared/request/BookRequest.class
+module-info.class
+com/myproject/lms/shared/request/Request.class
 com/myproject/lms/shared/to/DbOperations.class
+com/myproject/lms/shared/request/LoginRequest.class

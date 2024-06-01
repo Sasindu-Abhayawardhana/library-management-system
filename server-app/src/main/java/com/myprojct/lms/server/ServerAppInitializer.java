@@ -1,17 +1,16 @@
 package com.myprojct.lms.server;
 
 import com.myprojct.lms.server.db.SingletonConnection;
+import com.myproject.lms.shared.request.BookRequest;
+import com.myproject.lms.shared.request.LoginRequest;
+import com.myproject.lms.shared.request.Request;
 import com.myproject.lms.shared.to.Book;
 import com.myproject.lms.shared.to.DbOperations;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -36,83 +35,123 @@ public class ServerAppInitializer {
                 CLIENT_LIST.add(localSocket);
 
                 new Thread(() -> {
-                    try (InputStream is = localSocket.getInputStream();
-                         ObjectInputStream ois = new ObjectInputStream(is);
-                         Statement stm = SingletonConnection.getInstance().getConnection().createStatement()) {
+                    try {
+                        InputStream is = localSocket.getInputStream();
+                        OutputStream os = localSocket.getOutputStream();
+                        ObjectInputStream ois = new ObjectInputStream(is);
+                        ObjectOutputStream oos = new ObjectOutputStream(os);
+                        Connection connection = SingletonConnection.getInstance().getConnection();
 
+                        if (connection == null) {
+                            System.err.println("Connection is Null");
+                            return;
+                        }
 
                         while (true) {
-                            Book book = (Book) ois.readObject();
 
-                            switch (book.getDbOperations()) {
-                                case ADD -> {
-                                    // use execute update here, since Insert Into return the effected row count,
-                                    // executequery return the result test
+                            Request request = (Request) ois.readObject();
 
-                                    try {
+                            if (request instanceof LoginRequest) {
 
-                                        stm.executeUpdate(
-                                                """
-                                                        INSERT INTO book (isbn, title, author, publisher, category, price) 
-                                                            VALUES (book.isbn, book.title, book.author, book.publisher, book.category,book.price)
-                                                        """, Statement.RETURN_GENERATED_KEYS
-                                        );
+                                LoginRequest loginRequest = (LoginRequest) request;
+                                if (!loginRequest.getIsUserExit()) {
 
-                                        ResultSet generatedKeys = stm.getGeneratedKeys();
-                                        generatedKeys.next();
-                                        int id = generatedKeys.getInt("id");
-                                        System.out.println("Added Book with id " + id + " to the database");
+                                    String username = loginRequest.getUsername();
 
-
-                                    } catch (SQLException e) {
-                                        throw new RuntimeException(e);
+                                    // check the user validity
+                                    PreparedStatement stm = connection.prepareStatement(
+                                            """
+                                                                                                    
+                                                        SELECT FROM admin_users WHERE username = ?
+                                                    """
+                                    );
+                                    stm.setString(1, username);
+                                    ResultSet resultSet = stm.executeQuery();
+                                    if(resultSet.next()){
+                                        System.out.println("User Exited Successfully" );
+                                        loginRequest.setIsUserExit(true);
+                                        oos.writeObject(loginRequest);
                                     }
+
                                 }
-                                case READ -> {
-                                    //ToDo
-                                }
-                                case UPDATE -> {
-                                    try {
-                                        int updatedRows = stm.executeUpdate(
-                                                """
-                                                        UPDATE book SET isbn=book.isbn, title=book.title, author=book.author, publisher=book.publisher, category=book.category, price=book.price
-                                                        WHERE id=book.id OR isbn=book.isbn
+
+
+                            } else if (request instanceof BookRequest) {
+
+                                try (Statement stm = connection.createStatement()) {
+                                    Book book = (Book) ois.readObject();
+
+                                    switch (book.getDbOperations()) {
+                                        case ADD -> {
+                                            // use execute update here, since Insert Into return the effected row count,
+                                            // executequery return the result test
+
+                                            try {
+
+                                                stm.executeUpdate(
+                                                        """                                                                       
+                                                                    INSERT INTO book (isbn, title, author, publisher, category, price) 
+                                                                    VALUES (book.isbn, book.title, book.author, book.publisher, book.category,book.price)
+                                                                """, Statement.
+
+                                                                RETURN_GENERATED_KEYS
+                                                );
+
+                                                ResultSet generatedKeys = stm.getGeneratedKeys();
+                                                generatedKeys.next();
+                                                int id = generatedKeys.getInt("id");
+                                                System.out.println("Added Book with id " + id + " to the database");
+                                            } catch (SQLException e) {
+                                                throw new RuntimeException(e);
+                                            }
+                                        }
+                                        case READ -> {
+                                            //ToDo
+                                        }
+                                        case UPDATE -> {
+                                            try {
+                                                int updatedRows = stm.executeUpdate(
                                                         """
-                                        );
+                                                                UPDATE book SET isbn=book.isbn, title=book.title, author=book.author,publisher=book.publisher, category
+                                                                    =book.category WHERE id =book.id OR isbn=book.isbn
+                                                                """);
+                                                if (updatedRows > 0) {
+                                                    System.out.println(
+                                                            "Book Record is Inserted Successfully");
+                                                } else {
+                                                    System.out.println(
+                                                            "Book Record is not Inserted Successfully");
+                                                }
 
-                                        if (updatedRows > 0) {
-                                            System.out.println("Book Record is Inserted Successfully");
+                                            } catch (
+                                                    SQLException e) {
+                                                throw new RuntimeException(e);
+                                            }
                                         }
-                                        else {
-                                            System.out.println("Book Record is not Inserted Successfully");
+                                        case DELETE -> {
+//                                            try {
+//                                                int deletedRows = stm.executeUpdate(
+//
+//                                                        """
+//                                                                DELETE FROM WHERE id=
+//                                                                                            """
+//                                                );
+//
+//                                                if (deletedRows > 0) {
+//                                                    System.out.println(
+//                                                            "Book Record is deleted");
+//                                                } else {
+//                                                    System.out.println("Book Record is not deleted");
+//                                                }
+//
+//                                            } catch (SQLException e) {
+//                                                throw new RuntimeException(e);
+//                                            }
                                         }
-
-                                    } catch (SQLException e) {
-                                        throw new RuntimeException(e);
+                                        default ->
+                                                throw new IllegalStateException("Unexpected value: " + book.getDbOperations());
                                     }
                                 }
-                                case DELETE -> {
-                                    try {
-                                        int deletedRows = stm.executeUpdate(
-                                                """
-                                                        DELETE FROM book
-                                                        WHERE id=book.id OR isbn=book.isbn
-                                                        """
-                                        );
-
-                                        if (deletedRows > 0) {
-                                            System.out.println("Book Record is deleted");
-                                        }
-                                        else {
-                                            System.out.println("Book Record is not deleted");
-                                        }
-
-                                    } catch (SQLException e) {
-                                        throw new RuntimeException(e);
-                                    }
-                                }
-                                default ->
-                                        throw new IllegalStateException("Unexpected value: " + book.getDbOperations());
                             }
 
                         }

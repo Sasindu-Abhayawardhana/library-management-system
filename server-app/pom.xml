@@ -13,6 +13,13 @@
         <maven.compiler.target>21</maven.compiler.target>
     </properties>
     <dependencies>
+
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>42.7.3</version>
+        </dependency>
+
         <dependency>
             <groupId>com.myproject.lms_team</groupId>
             <artifactId>shared-app</artifactId>

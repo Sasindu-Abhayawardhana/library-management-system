@@ -1,12 +1,12 @@
 package com.myproject.lms.shared.to;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Getter
+@Setter
 public class Book {
 
     DbOperations dbOperations;
