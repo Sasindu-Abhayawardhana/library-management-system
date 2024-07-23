@@ -15,6 +15,7 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import org.apache.commons.codec.digest.DigestUtils;
 
 public class LoginViewController {
 
@@ -25,9 +26,11 @@ public class LoginViewController {
 
     private ObjectOutputStream oos;
     private ObjectInputStream ois;
-    private Socket remoteSocket;
+    private static Socket remoteSocket;
 
     private final int TIMEOUT_MILLISECONDS = 5000;
+
+    private static LoginRequest loginRequest = new LoginRequest();
 
     public void initialize() throws IOException {
         remoteSocket = new Socket("localhost", 5050);
@@ -41,27 +44,32 @@ public class LoginViewController {
 
         String username = txtUsername.getText();
 
-        LoginRequest loginRequest = new LoginRequest();
-        loginRequest.setUsername(username);
+//        LoginRequest loginRequest = new LoginRequest();
+
+        loginRequest.setUsername(username); // set the username to the login request object
 
         boolean userNameStatus = false;
 
         try {
             oos.writeObject(loginRequest);
 //            userNameStatus = ois.readBoolean();
-            userNameStatus = ((LoginRequest)ois.readObject()).getIsUserExit();
+            // read the server side response and check the user availability
+            LoginRequest loginRequestResponse = (LoginRequest) ois.readObject();
+            userNameStatus = loginRequestResponse.getIsUserExit();
             System.out.println("userNameStatus: " + userNameStatus);
             remoteSocket.setSoTimeout(TIMEOUT_MILLISECONDS);
 
-            if(userNameStatus){
+            if (userNameStatus) {
                 loginRequest.setIsUserExit(true);
+                System.out.println("login req Res" + loginRequestResponse.getPassword());
+                loginRequest.setPassword(loginRequestResponse.getPassword());
                 Stage stage = new Stage();
                 stage.setScene(new Scene(FXMLLoader.load(getClass().getResource("/view/LoginViewUserPassword.fxml"))));
                 stage.setResizable(false);
                 ((Stage) btnUsernameLogin.getScene().getWindow()).close();
                 stage.show();
                 stage.centerOnScreen();
-            } else{
+            } else {
                 new Alert(Alert.AlertType.INFORMATION, "Try Again !!!").showAndWait();
             }
 
@@ -73,6 +81,25 @@ public class LoginViewController {
 
     }
 
-public void btnPasswordLoginOnAction(ActionEvent actionEvent) {
-}
+    public void btnPasswordLoginOnAction(ActionEvent actionEvent) {
+
+        String password = txtPassword.getText();
+
+        final String hashed = DigestUtils.sha256Hex(password);
+
+        System.out.println(hashed);
+
+        System.out.println("serverHashed: " + loginRequest.getPassword());
+
+        if (hashed.equals(loginRequest.getPassword())) {
+            System.out.println("Password Match");
+            ((Stage) btnPasswordLogin.getScene().getWindow()).close();
+            new Alert(Alert.AlertType.INFORMATION, "Login Successful").showAndWait();
+        }else {
+            new Alert(Alert.AlertType.ERROR, "Incorrect Password or Username").showAndWait();
+//            ((Stage) btnUsernameLogin.getScene().getWindow()).show();
+        }
+
+//
+    }
 }

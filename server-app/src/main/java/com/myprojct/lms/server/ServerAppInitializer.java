@@ -29,17 +29,20 @@ public class ServerAppInitializer {
 
             System.out.println("Server started on port 5050");
 
-            // keep listen to the client
+            // keeping listen to the client
             while (true) {
                 Socket localSocket = serverSocket.accept();
                 CLIENT_LIST.add(localSocket);
 
                 new Thread(() -> {
                     try {
+                        // get the input and output stream socket of the client connected socket
                         InputStream is = localSocket.getInputStream();
                         OutputStream os = localSocket.getOutputStream();
                         ObjectInputStream ois = new ObjectInputStream(is);
                         ObjectOutputStream oos = new ObjectOutputStream(os);
+
+                        // use a singleton class to get the DB connection
                         Connection connection = SingletonConnection.getInstance().getConnection();
 
                         if (connection == null) {
@@ -47,10 +50,17 @@ public class ServerAppInitializer {
                             return;
                         }
 
+                        // reading the client's request
                         while (true) {
 
+                            /*client can send request regarding following
+                            1. Login Request
+                            2. Book Request (Add,remove,search,update)
+                            3. Payment Details //TODO
+                            * */
                             Request request = (Request) ois.readObject();
 
+                            // Login Request
                             if (request instanceof LoginRequest) {
 
                                 LoginRequest loginRequest = (LoginRequest) request;
@@ -59,18 +69,23 @@ public class ServerAppInitializer {
                                     String username = loginRequest.getUsername();
 
                                     // check the user validity
+                                    // use the preparedStatement to avoid the sql injection
                                     PreparedStatement stm = connection.prepareStatement(
                                             """
                                                                                                     
-                                                        SELECT FROM admin_users WHERE username = ?
+                                                        SELECT * FROM admin_users WHERE username = ?
                                                     """
                                     );
+                                    // set the username
                                     stm.setString(1, username);
                                     ResultSet resultSet = stm.executeQuery();
                                     if(resultSet.next()){
                                         System.out.println("User Exited Successfully" );
-                                        loginRequest.setIsUserExit(true);
-                                        oos.writeObject(loginRequest);
+                                        loginRequest.setIsUserExit(true); // if the user exist set the update the login req boolean
+                                        String hashPassword = resultSet.getString("password");
+                                        System.out.println(hashPassword);
+                                        loginRequest.setPassword(hashPassword);
+                                        oos.writeObject(loginRequest); // send the response to the client
                                     }
 
                                 }

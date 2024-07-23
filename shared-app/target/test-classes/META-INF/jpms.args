@@ -1,0 +1,4 @@
+--patch-module
+com.myproject.lms.shared=_
+--add-reads
+com.myproject.lms.shared=ALL-UNNAMED
